@@ -25,7 +25,7 @@ Add this to your package's `pubspec.yaml` file:
 dependencies:
   edge_tts_dart:
     git:
-      url: https://github.com/yourusername/edge-tts-dart.git
+      url: https://github.com/twn39/edgetts-dart.git
 ```
 
 ## Usage
