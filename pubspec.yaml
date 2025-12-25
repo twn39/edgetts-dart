@@ -1,6 +1,6 @@
 name: edge_tts_dart
 description: A Dart port of the edge-tts library for accessing Microsoft Edge's online text-to-speech service.
-version: 0.0.1
+version: 0.1.0
 homepage: https://github.com/example/edge_tts_dart # TODO: Replace with your actual repository URL
 repository: https://github.com/example/edge_tts_dart # TODO: Replace with your actual repository URL
 issue_tracker: https://github.com/example/edge_tts_dart/issues # TODO: Replace with your actual repository URL
@@ -18,10 +18,10 @@ dependencies:
   http: ^1.1.0
   uuid: ^4.0.0
   crypto: ^3.0.3
-  web_socket_channel: ^2.4.0
-  intl: ^0.19.0
+  web_socket_channel: ^3.0.3
+  intl: ^0.20.2
 
 dev_dependencies:
   coverage: ^1.15.0
-  lints: ^3.0.0
+  lints: ^6.0.0
   test: ^1.24.0
