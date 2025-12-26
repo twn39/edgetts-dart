@@ -33,7 +33,7 @@ dependencies:
 ### Listing Available Voices
 
 ```dart
-import 'package:edge_tts_dart/edge_tts.dart';
+import 'package:edge_tts_dart/edge_tts_dart.dart';
 
 void main() async {
   try {
