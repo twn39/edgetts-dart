@@ -1,0 +1,55 @@
+name: Tests
+
+on:
+  # 每天北京时间 09:00 执行 (UTC 01:00)
+  schedule:
+    - cron: '0 1 * * *'
+  
+  # 允许手动触发
+  workflow_dispatch:
+  
+  # 在 push 和 pull request 时也运行测试
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Run tests on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        sdk: [stable, beta]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ matrix.sdk }}
+      
+      - name: Install dependencies
+        run: dart pub get
+      
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+      
+      - name: Analyze code
+        run: dart analyze
+      
+      - name: Run tests
+        run: dart test --coverage=coverage
+      
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest' && matrix.sdk == 'stable'
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage/lcov.info
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
