@@ -24,34 +24,37 @@ void main() {
         pitch: "+0Hz",
       );
       final ssml = EdgeTTSUtil.mkssml(config, "Hello World");
-      
-      expect(ssml, contains("<voice name='Microsoft Server Speech Text to Speech Voice (en-US, AriaNeural)'>"));
+
+      expect(
+          ssml,
+          contains(
+              "<voice name='Microsoft Server Speech Text to Speech Voice (en-US, AriaNeural)'>"));
       expect(ssml, contains("rate='+10%'"));
       expect(ssml, contains("Hello World"));
     });
 
     test('splitTextByByteLength splits correctly', () {
-        final text = "Hello " * 1000;
-        final chunks = EdgeTTSUtil.splitTextByByteLength(text, 1000).toList();
-        
-        for (final chunk in chunks) {
-            expect(chunk.length, lessThanOrEqualTo(1000));
-        }
-        expect(chunks.join(' '), equals(text.trim()));
+      final text = "Hello " * 1000;
+      final chunks = EdgeTTSUtil.splitTextByByteLength(text, 1000).toList();
+
+      for (final chunk in chunks) {
+        expect(chunk.length, lessThanOrEqualTo(1000));
+      }
+      expect(chunks.join(' '), equals(text.trim()));
     });
-    
+
     test('splitTextByByteLength handles utf8 properly', () {
-        final text = "你好" * 500; // 3 bytes each -> 3000 bytes
-        // Split at 1000 bytes. 1000 is not div by 3, so it must not split in middle of char.
-        final chunks = EdgeTTSUtil.splitTextByByteLength(text, 1000).toList();
-        
-        for (final chunk in chunks) {
-             // Re-encode to check byte length
-             // In Dart String.length is UTF-16 code units.
-             // We need to check UTF-8 bytes.
-             // But the utility guarantees UTF-8 byte length split.
-        }
-        expect(chunks.join(''), equals(text));
+      final text = "你好" * 500; // 3 bytes each -> 3000 bytes
+      // Split at 1000 bytes. 1000 is not div by 3, so it must not split in middle of char.
+      final chunks = EdgeTTSUtil.splitTextByByteLength(text, 1000).toList();
+
+      for (final _ in chunks) {
+        // Re-encode to check byte length
+        // In Dart String.length is UTF-16 code units.
+        // We need to check UTF-8 bytes.
+        // But the utility guarantees UTF-8 byte length split.
+      }
+      expect(chunks.join(''), equals(text));
     });
   });
 }

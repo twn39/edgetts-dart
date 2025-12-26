@@ -1,9 +1,12 @@
 class Constants {
-  static const String baseUrl = "speech.platform.bing.com/consumer/speech/synthesize/readaloud";
+  static const String baseUrl =
+      "speech.platform.bing.com/consumer/speech/synthesize/readaloud";
   static const String trustedClientToken = "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
 
-  static const String wssUrl = "wss://$baseUrl/edge/v1?TrustedClientToken=$trustedClientToken";
-  static const String voiceList = "https://$baseUrl/voices/list?trustedclienttoken=$trustedClientToken";
+  static const String wssUrl =
+      "wss://$baseUrl/edge/v1?TrustedClientToken=$trustedClientToken";
+  static const String voiceList =
+      "https://$baseUrl/voices/list?trustedclienttoken=$trustedClientToken";
 
   static const String defaultVoice = "en-US-EmmaMultilingualNeural";
 
@@ -32,7 +35,8 @@ class Constants {
   static Map<String, String> get voiceHeaders {
     final headers = {
       "Authority": "speech.platform.bing.com",
-      "Sec-CH-UA": '" Not;A Brand";v="99", "Microsoft Edge";v="$chromiumMajorVersion", "Chromium";v="$chromiumMajorVersion"',
+      "Sec-CH-UA":
+          '" Not;A Brand";v="99", "Microsoft Edge";v="$chromiumMajorVersion", "Chromium";v="$chromiumMajorVersion"',
       "Sec-CH-UA-Mobile": "?0",
       "Accept": "*/*",
       "Sec-Fetch-Site": "none",

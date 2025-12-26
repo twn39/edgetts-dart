@@ -16,18 +16,18 @@ void main() {
     });
 
     test('headersWithMuid adds Cookie header', () {
-        final headers = {"User-Agent": "Test"};
-        final newHeaders = DRM.headersWithMuid(headers);
-        
-        expect(newHeaders.containsKey("Cookie"), isTrue);
-        expect(newHeaders["Cookie"], startsWith("muid="));
-        expect(newHeaders["User-Agent"], equals("Test"));
+      final headers = {"User-Agent": "Test"};
+      final newHeaders = DRM.headersWithMuid(headers);
+
+      expect(newHeaders.containsKey("Cookie"), isTrue);
+      expect(newHeaders["Cookie"], startsWith("muid="));
+      expect(newHeaders["User-Agent"], equals("Test"));
     });
-    
+
     test('parseRfc2616Date parses correctly', () {
-        // "Wed, 21 Oct 2015 07:28:00 GMT" -> 1445412480.0
-        final timestamp = DRM.parseRfc2616Date("Wed, 21 Oct 2015 07:28:00 GMT");
-        expect(timestamp, equals(1445412480.0));
+      // "Wed, 21 Oct 2015 07:28:00 GMT" -> 1445412480.0
+      final timestamp = DRM.parseRfc2616Date("Wed, 21 Oct 2015 07:28:00 GMT");
+      expect(timestamp, equals(1445412480.0));
     });
   });
 }

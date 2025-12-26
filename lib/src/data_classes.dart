@@ -28,21 +28,23 @@ class TTSConfig {
     if (!RegExp(r"^[+-]\d+Hz$").hasMatch(pitch)) {
       throw ArgumentError("Invalid pitch '$pitch'.");
     }
-    
+
     // Handle the voice name parsing logic akin to Python if necessary
     // match = re.match(r"^([a-z]{2,})-([A-Z]{2,})-(.+Neural)$", self.voice)
-    final match = RegExp(r"^([a-z]{2,})-([A-Z]{2,})-(.+Neural)$").firstMatch(voice);
+    final match =
+        RegExp(r"^([a-z]{2,})-([A-Z]{2,})-(.+Neural)$").firstMatch(voice);
     if (match != null) {
       final lang = match.group(1);
       var region = match.group(2)!;
       var name = match.group(3)!;
-      
+
       if (name.contains("-")) {
-         region = "$region-${name.substring(0, name.indexOf('-'))}";
-         name = name.substring(name.indexOf('-') + 1);
+        region = "$region-${name.substring(0, name.indexOf('-'))}";
+        name = name.substring(name.indexOf('-') + 1);
       }
-      
-      voice = "Microsoft Server Speech Text to Speech Voice ($lang-$region, $name)";
+
+      voice =
+          "Microsoft Server Speech Text to Speech Voice ($lang-$region, $name)";
     }
   }
 }
@@ -97,13 +99,17 @@ class Metadata {
   final double duration;
   final String text;
 
-  Metadata({required this.type, required this.offset, required this.duration, required this.text});
-  
+  Metadata(
+      {required this.type,
+      required this.offset,
+      required this.duration,
+      required this.text});
+
   factory Metadata.fromJson(Map<String, dynamic> json) {
-      // Logic from communicate.py __parse_metadata
-      // It receives the inner data object usually?
-      // Wait, python yield parsed_metadata which is a dict.
-      /*
+    // Logic from communicate.py __parse_metadata
+    // It receives the inner data object usually?
+    // Wait, python yield parsed_metadata which is a dict.
+    /*
                 return {
                     "type": meta_type,
                     "offset": current_offset,
@@ -111,11 +117,11 @@ class Metadata {
                     "text": unescape(meta_obj["Data"]["text"]["Text"]),
                 }
       */
-      return Metadata(
-          type: json['type'],
-          offset: json['offset'],
-          duration: json['duration'],
-          text: json['text'],
-      );
+    return Metadata(
+      type: json['type'],
+      offset: json['offset'],
+      duration: json['duration'],
+      text: json['text'],
+    );
   }
 }
