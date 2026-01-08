@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/io.dart';
-// import 'package:web_socket_channel/web_socket_channel.dart'; // Unused
 
 import 'constants.dart';
 import 'data_classes.dart';
@@ -53,36 +54,106 @@ class Communicate {
     for (final partialText in texts) {
       state["partial_text"] = partialText;
 
-      try {
-        await for (final message in _stream()) {
-          yield message;
+      bool retried = false;
+      while (true) {
+        try {
+          await for (final message in _stream()) {
+            yield message;
+          }
+          break; // Success
+        } catch (e) {
+          if (retried) rethrow;
+
+          // Check for 403 error. WebSocketChannelException usually wraps WebSocketException
+          if (e.toString().contains("403")) {
+            retried = true;
+            // Attempt to sync clock
+            try {
+              await _syncClock();
+              continue; // Retry after sync
+            } catch (syncError) {
+              // If sync fails, just rethrow original error
+              rethrow;
+            }
+          }
+          rethrow;
         }
-      } catch (e) {
-        // Handle specific errors or retries if needed
-        // Python: if e.status != 403: raise ... DRM.handle...
-        // Here we catch generic exceptions from WebSocket or processing
-        // If we had a mechanism to check 403 from connect, we'd do it.
-        // IOWebSocketChannel might throw WebSocketChannelException.
-        // Retrying with clock skew adjustment is tricky here without explicit status code
-        // unless the exception contains it.
-        // For now, simple rethrow.
-        rethrow;
       }
+    }
+  }
+
+  Future<void> _syncClock() async {
+    final client = http.Client();
+    try {
+      // Use voiceList URL for the check request as it's known to work
+      final uri = Uri.parse(Constants.voiceList);
+      
+      // Add standard headers to the sync request
+      final headers = DRM.headersWithMuid(Constants.wssHeaders);
+      final response = await client.get(uri, headers: headers);
+      
+      DRM.handleClientResponseError(response.statusCode, response.headers);
+    } finally {
+      client.close();
     }
   }
 
   Stream<TTSChunk> _stream() async* {
     final connectId = EdgeTTSUtil.connectId();
     final secMsGec = DRM.generateSecMsGec();
-    final wssUrl =
-        "${Constants.wssUrl}&ConnectionId=$connectId&Sec-MS-GEC=$secMsGec&Sec-MS-GEC-Version=${Constants.secMsGecVersion}";
+    
+    final queryParams = {
+      'TrustedClientToken': Constants.trustedClientToken,
+      'ConnectionId': connectId,
+      'Sec-MS-GEC': secMsGec,
+      'Sec-MS-GEC-Version': Constants.secMsGecVersion,
+    };
+
+    final uri = Uri(
+      scheme: 'wss',
+      host: 'speech.platform.bing.com',
+      port: 443,
+      path: '/consumer/speech/synthesize/readaloud/edge/v1',
+      queryParameters: queryParams,
+    );
+    final wssUrl = uri.toString();
 
     final headers = DRM.headersWithMuid(Constants.wssHeaders);
+    // Remove Sec-WebSocket-Version as we'll set it manually for the handshake
+    headers.remove("Sec-WebSocket-Version");
 
-    // Connect
-    // Note: IOWebSocketChannel.connect supports headers.
-    final channel =
-        IOWebSocketChannel.connect(Uri.parse(wssUrl), headers: headers);
+    // Manual handshake to avoid 403 issue with WebSocket.connect
+    WebSocket socket;
+    final client = HttpClient();
+    try {
+      final request = await client.getUrl(uri.replace(scheme: 'https'));
+      headers.forEach((name, value) {
+        request.headers.set(name, value);
+      });
+      
+      // Set headers for upgrade
+      request.headers.set('Connection', 'Upgrade');
+      request.headers.set('Upgrade', 'websocket');
+      request.headers.set('Sec-WebSocket-Version', '13');
+      
+      // Generating a random key for the handshake
+      final key = base64.encode(List<int>.generate(16, (_) => (DateTime.now().microsecondsSinceEpoch % 256)));
+      request.headers.set('Sec-WebSocket-Key', key);
+
+      final response = await request.close();
+      if (response.statusCode != 101) {
+        final body = await response.transform(utf8.decoder).join();
+        throw WebSocketException("Handshake failed with status ${response.statusCode}: $body");
+      }
+      
+      final detachedSocket = await response.detachSocket();
+      socket = WebSocket.fromUpgradedSocket(detachedSocket, serverSide: false);
+    } catch (e) {
+      client.close();
+      rethrow;
+    }
+
+    final channel = IOWebSocketChannel(socket);
 
     bool audioWasReceived = false;
 

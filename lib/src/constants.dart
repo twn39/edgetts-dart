@@ -10,7 +10,7 @@ class Constants {
 
   static const String defaultVoice = "en-US-EmmaMultilingualNeural";
 
-  static const String chromiumFullVersion = "130.0.2849.68";
+  static const String chromiumFullVersion = "143.0.3650.75";
   static String get chromiumMajorVersion => chromiumFullVersion.split(".")[0];
   static String get secMsGecVersion => "1-$chromiumFullVersion";
 
