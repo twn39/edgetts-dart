@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
-// import 'package:uuid/uuid.dart'; // Unused
 import 'constants.dart';
 import 'exceptions.dart';
 
@@ -21,7 +20,6 @@ class DRM {
 
   static double? parseRfc2616Date(String date) {
     try {
-      // Python: dt.strptime(date, "%a, %d %b %Y %H:%M:%S %Z")
       // Example: "Wed, 21 Oct 2015 07:28:00 GMT"
 
       final parts = date.split(' ');
@@ -95,6 +93,8 @@ class DRM {
     ticks -= ticks % 300;
     
     // Convert to 100-nanosecond intervals
+    // We use double arithmetic to precisely match the Python internal calculation
+    // which is required for the service to accept the Sec-MS-GEC token.
     ticks *= 10000000;
 
     final strToHash = "${ticks.toStringAsFixed(0)}${Constants.trustedClientToken}";

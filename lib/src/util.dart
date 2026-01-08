@@ -30,7 +30,6 @@ class EdgeTTSUtil {
       "Dec"
     ];
 
-    // final weekday = days[now.weekday == 7 ? 0 : now.weekday]; // Unused
     // Wait, DateTime.weekday 1 is Monday.
     // We need to map 7 to 0 if our array starts with Sun, or just index correctly.
     // Let's stick to 1-based indexing for array if we change array order,

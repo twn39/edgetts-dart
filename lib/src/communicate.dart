@@ -122,7 +122,10 @@ class Communicate {
     // Remove Sec-WebSocket-Version as we'll set it manually for the handshake
     headers.remove("Sec-WebSocket-Version");
 
-    // Manual handshake to avoid 403 issue with WebSocket.connect
+    // We use a manual HttpClient handshake instead of IOWebSocketChannel.connect
+    // because the standard Dart WebSocket connection is frequently rejected with a 403
+    // by the Edge TTS service. This manual approach provides full control over the
+    // upgrade process and matches the behavior of the working Python implementation.
     WebSocket socket;
     final client = HttpClient();
     try {
@@ -157,7 +160,6 @@ class Communicate {
 
     bool audioWasReceived = false;
 
-    // final controller = StreamController<TTSChunk>(); // Unused
 
     // Send Command Request
     final cmd = "X-Timestamp:${EdgeTTSUtil.dateToString()}\r\n"
@@ -183,18 +185,6 @@ class Communicate {
     await for (final message in channel.stream) {
       if (message is String) {
         // Text message
-        // final parameters = _getHeadersAndData(message); // Unused
-        /*
-            final headers = parameters.keys.fold<Map<String,String>>({}, (map, key) {
-               final k = key.trim();
-               if(k.isNotEmpty) {
-                 final parts = k.split(':');
-                 if(parts.length > 1) map[parts[0]] = parts.sublist(1).join(':');
-               }
-               return map;
-            });
-            */
-        // Unused
         // This parsing above is rough. Let's do it properly based on protocol.
         // Protocol: Headers\r\n\r\nData
 
@@ -270,12 +260,6 @@ class Communicate {
     }
   }
 
-  /*
-  Map<String, dynamic> _getHeadersAndData(String data) {
-      // Not actually used if I handle inline, but useful helper.
-      return {};
-  }
-  */
 
   Metadata _parseMetadata(String data) {
     final json = jsonDecode(data);
