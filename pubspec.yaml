@@ -1,6 +1,6 @@
 name: edge_tts_dart
 description: A Dart port of the edge-tts library for accessing Microsoft Edge's online text-to-speech service. Works with Flutter and pure Dart applications.
-version: 0.1.0
+version: 0.2.0
 homepage: https://github.com/twn39/edgetts-dart
 repository: https://github.com/twn39/edgetts-dart
 issue_tracker: https://github.com/twn39/edgetts-dart/issues
