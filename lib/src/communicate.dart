@@ -115,8 +115,6 @@ class Communicate {
       path: '/consumer/speech/synthesize/readaloud/edge/v1',
       queryParameters: queryParams,
     );
-    final wssUrl = uri.toString();
-
     final headers = DRM.headersWithMuid(Constants.wssHeaders);
     // Remove Sec-WebSocket-Version as we'll set it manually for the handshake
     headers.remove("Sec-WebSocket-Version");
