@@ -44,7 +44,10 @@ jobs:
         run: dart analyze
       
       - name: Run tests
-        run: dart test --coverage=coverage
+        shell: bash
+        run: |
+          dart test --coverage=coverage
+          dart run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --report-on=lib
       
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.sdk == 'stable'
