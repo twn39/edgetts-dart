@@ -2,7 +2,7 @@
 
 # Edge TTS Dart
 
-[![Tests](https://github.com/twn39/edgetts-dart/actions/workflows/test.yml/badge.svg)](https://github.com/twn39/edgetts-dart/actions/workflows/test.yml) [![Dart SDK](https://img.shields.io/badge/Dart-3.0%2B-blue.svg)](https://dart.dev) [![Platform](https://img.shields.io/badge/Platform-Flutter%20%7C%20Dart%20Native-blue.svg)](https://flutter.dev) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://github.com/twn39/edgetts-dart/actions/workflows/test.yml/badge.svg)](https://github.com/twn39/edgetts-dart/actions/workflows/test.yml) [![codecov](https://codecov.io/gh/twn39/edgetts-dart/graph/badge.svg?token=N8E25TJS9F)](https://codecov.io/gh/twn39/edgetts-dart) [![Dart SDK](https://img.shields.io/badge/Dart-3.0%2B-blue.svg)](https://dart.dev) [![Platform](https://img.shields.io/badge/Platform-Flutter%20%7C%20Dart%20Native-blue.svg)](https://flutter.dev) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A pure Dart implementation of the excellent [edge-tts](https://github.com/rany2/edge-tts) library.
 Access Microsoft Edge's online text-to-speech service from Dart and Flutter applications without needing a Microsoft Azure subscription or API key.
