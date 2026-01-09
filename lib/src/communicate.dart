@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/io.dart';
-
 import 'constants.dart';
 import 'data_classes.dart';
 import 'drm.dart';
@@ -87,11 +86,11 @@ class Communicate {
     try {
       // Use voiceList URL for the check request as it's known to work
       final uri = Uri.parse(Constants.voiceList);
-      
+
       // Add standard headers to the sync request
       final headers = DRM.headersWithMuid(Constants.wssHeaders);
       final response = await client.get(uri, headers: headers);
-      
+
       DRM.handleClientResponseError(response.statusCode, response.headers);
     } finally {
       client.close();
@@ -101,7 +100,7 @@ class Communicate {
   Stream<TTSChunk> _stream() async* {
     final connectId = EdgeTTSUtil.connectId();
     final secMsGec = DRM.generateSecMsGec();
-    
+
     final queryParams = {
       'TrustedClientToken': Constants.trustedClientToken,
       'ConnectionId': connectId,
@@ -133,22 +132,24 @@ class Communicate {
       headers.forEach((name, value) {
         request.headers.set(name, value);
       });
-      
+
       // Set headers for upgrade
       request.headers.set('Connection', 'Upgrade');
       request.headers.set('Upgrade', 'websocket');
       request.headers.set('Sec-WebSocket-Version', '13');
-      
+
       // Generating a random key for the handshake
-      final key = base64.encode(List<int>.generate(16, (_) => (DateTime.now().microsecondsSinceEpoch % 256)));
+      final key = base64.encode(List<int>.generate(
+          16, (_) => (DateTime.now().microsecondsSinceEpoch % 256)));
       request.headers.set('Sec-WebSocket-Key', key);
 
       final response = await request.close();
       if (response.statusCode != 101) {
         final body = await response.transform(utf8.decoder).join();
-        throw WebSocketException("Handshake failed with status ${response.statusCode}: $body");
+        throw WebSocketException(
+            "Handshake failed with status ${response.statusCode}: $body");
       }
-      
+
       final detachedSocket = await response.detachSocket();
       socket = WebSocket.fromUpgradedSocket(detachedSocket, serverSide: false);
     } catch (e) {
@@ -159,7 +160,6 @@ class Communicate {
     final channel = IOWebSocketChannel(socket);
 
     bool audioWasReceived = false;
-
 
     // Send Command Request
     final cmd = "X-Timestamp:${EdgeTTSUtil.dateToString()}\r\n"
@@ -259,7 +259,6 @@ class Communicate {
       throw NoAudioReceived("No audio received");
     }
   }
-
 
   Metadata _parseMetadata(String data) {
     final json = jsonDecode(data);

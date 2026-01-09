@@ -57,8 +57,18 @@ class DRM {
       final second = int.parse(timeParts[2]);
 
       final months = [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec"
       ];
       final month = months.indexOf(monthStr) + 1;
       if (month == 0) return null;
@@ -70,7 +80,8 @@ class DRM {
     }
   }
 
-  static void handleClientResponseError(int status, Map<String, String> headers) {
+  static void handleClientResponseError(
+      int status, Map<String, String> headers) {
     final serverDate = headers['date'] ?? headers['Date'];
     if (serverDate == null) {
       throw SkewAdjustmentError("No server date in headers.");
@@ -88,16 +99,17 @@ class DRM {
   static String generateSecMsGec() {
     double ticks = getUnixTimestamp();
     ticks += winEpoch;
-    
+
     // Round down to the nearest 5 minutes (300 seconds)
     ticks -= ticks % 300;
-    
+
     // Convert to 100-nanosecond intervals
     // We use double arithmetic to precisely match the Python internal calculation
     // which is required for the service to accept the Sec-MS-GEC token.
     ticks *= 10000000;
 
-    final strToHash = "${ticks.toStringAsFixed(0)}${Constants.trustedClientToken}";
+    final strToHash =
+        "${ticks.toStringAsFixed(0)}${Constants.trustedClientToken}";
 
     final bytes = utf8.encode(strToHash);
     final digest = sha256.convert(bytes);
