@@ -5,8 +5,6 @@
 
 const int _secondsInHour = 3600;
 const int _secondsInMinute = 60;
-const int _hoursInDay = 24;
-const int _microsecondsInMillisecond = 1000;
 
 final RegExp _multiWsRegex = RegExp(r'\n\n+');
 
