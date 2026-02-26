@@ -40,7 +40,8 @@ void main() {
 
     test('valid short voice name is converted to long format', () {
       final config = TTSConfig(voice: 'en-US-AriaNeural');
-      expect(config.voice, startsWith('Microsoft Server Speech Text to Speech Voice'));
+      expect(config.voice,
+          startsWith('Microsoft Server Speech Text to Speech Voice'));
       expect(config.voice, contains('en-US'));
       expect(config.voice, contains('AriaNeural'));
     });
@@ -55,7 +56,8 @@ void main() {
       // Some voices have names like "en-IE-ConnorNeural" which is fine,
       // but edge cases like sub-regions: "zh-CN-liaoning-XiaobeiNeural"
       final config = TTSConfig(voice: 'zh-CN-XiaobeiNeural');
-      expect(config.voice, startsWith('Microsoft Server Speech Text to Speech Voice'));
+      expect(config.voice,
+          startsWith('Microsoft Server Speech Text to Speech Voice'));
     });
   });
 

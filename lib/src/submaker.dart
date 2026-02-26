@@ -48,8 +48,7 @@ class SubMaker {
     cues.add(Subtitle(
       index: cues.length + 1,
       start: Duration(microseconds: (meta.offset / 10).round()),
-      end: Duration(
-          microseconds: ((meta.offset + meta.duration) / 10).round()),
+      end: Duration(microseconds: ((meta.offset + meta.duration) / 10).round()),
       content: meta.text,
     ));
   }

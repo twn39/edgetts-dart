@@ -5,8 +5,7 @@ void main() {
   group('SRT Composer', () {
     test('timedeltaToSrtTimestamp formats correctly', () {
       expect(
-        timedeltaToSrtTimestamp(
-            Duration(hours: 1, minutes: 23, seconds: 4)),
+        timedeltaToSrtTimestamp(Duration(hours: 1, minutes: 23, seconds: 4)),
         equals('01:23:04,000'),
       );
 
@@ -17,8 +16,8 @@ void main() {
       );
 
       expect(
-        timedeltaToSrtTimestamp(Duration(
-            hours: 12, minutes: 59, seconds: 59, milliseconds: 999)),
+        timedeltaToSrtTimestamp(
+            Duration(hours: 12, minutes: 59, seconds: 59, milliseconds: 999)),
         equals('12:59:59,999'),
       );
     });

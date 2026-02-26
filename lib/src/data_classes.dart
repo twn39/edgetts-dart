@@ -87,7 +87,8 @@ class Voice {
   });
 
   factory Voice.fromJson(Map<String, dynamic> json) {
-    final rawTag = json['VoiceTag'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final rawTag =
+        json['VoiceTag'] as Map<String, dynamic>? ?? <String, dynamic>{};
     final tag = Map<String, dynamic>.from(rawTag);
     tag.putIfAbsent('ContentCategories', () => <dynamic>[]);
     tag.putIfAbsent('VoicePersonalities', () => <dynamic>[]);

@@ -3,7 +3,6 @@
 /// Based on the Python srt_composer module from edge-tts.
 /// Original Python version based on https://github.com/cdown/srt.
 
-
 const int _secondsInHour = 3600;
 const int _secondsInMinute = 60;
 const int _hoursInDay = 24;

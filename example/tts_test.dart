@@ -16,7 +16,8 @@ void main() async {
   await for (final chunk in communicate.stream()) {
     if (chunk.type == 'audio') {
       sink.add(chunk.audioData!);
-    } else if (chunk.type == 'WordBoundary' || chunk.type == 'SentenceBoundary') {
+    } else if (chunk.type == 'WordBoundary' ||
+        chunk.type == 'SentenceBoundary') {
       subMaker.feed(chunk);
     }
   }
