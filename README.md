@@ -15,8 +15,12 @@ Access Microsoft Edge's online text-to-speech service from Dart and Flutter appl
 - 📱 **Cross-Platform**: Works purely with Dart (`dart:io` compatible), perfect for Flutter mobile and desktop apps.
 - 🗣️ **All Voices**: Access to all Microsoft Edge voices (300+ voices across many languages & locales).
 - 🌊 **Streaming Audio**: Supports real-time audio streaming via WebSocket.
-- 📝 **Metadata Support**: Receive strict `WordBoundary` and `SentenceBoundary` events for text highlighting synchronization.
+- 📝 **Metadata Support**: Receive `WordBoundary` and `SentenceBoundary` events for text highlighting synchronization.
 - 🎛️ **SSML Support**: Full control over pitch, rate, and volume.
+- 💾 **Save to File**: Built-in `save()` method for quick audio file generation.
+- 📋 **Subtitle Generation**: `SubMaker` and SRT composer for generating synchronized subtitles.
+- 🔍 **Voice Manager**: `VoicesManager` class for filtering voices by gender, locale, or language.
+- ⏱️ **Timeout Control**: Configurable `connectTimeout` and `receiveTimeout` for network operations.
 
 ## Installation
 
@@ -37,18 +41,34 @@ dependencies:
 import 'package:edge_tts_dart/edge_tts_dart.dart';
 
 void main() async {
-  try {
-    final voices = await listVoices();
-    print("Found ${voices.length} voices!");
-    
-    // Filter for English voices
-    final englishVoices = voices.where((v) => v.locale.startsWith("en-"));
-    for (final voice in englishVoices) {
-      print("${voice.shortName} - ${voice.gender}");
-    }
-  } catch (e) {
-    print("Error: $e");
+  final voices = await listVoices();
+  print("Found ${voices.length} voices!");
+
+  // Filter for English voices
+  final englishVoices = voices.where((v) => v.locale.startsWith("en-"));
+  for (final voice in englishVoices) {
+    print("${voice.shortName} - ${voice.gender}");
   }
+}
+```
+
+### Finding Voices with VoicesManager
+
+```dart
+import 'package:edge_tts_dart/edge_tts_dart.dart';
+
+void main() async {
+  final manager = await VoicesManager.create();
+
+  // Find all female English (US) voices
+  final voices = manager.find(gender: 'Female', locale: 'en-US');
+  for (final voice in voices) {
+    print("${voice.shortName} (${voice.language})");
+  }
+
+  // Find all Chinese voices
+  final zhVoices = manager.find(language: 'zh');
+  print("Found ${zhVoices.length} Chinese voices.");
 }
 ```
 
@@ -59,29 +79,22 @@ import 'dart:io';
 import 'package:edge_tts_dart/edge_tts_dart.dart';
 
 void main() async {
-  final text = "Hello, world! This is a test of Edge TTS in Dart.";
-  
-  // Create the communicator
   final communicate = Communicate(
-    text: text,
-    voice: "en-US-AriaNeural", 
+    text: "Hello, world! This is a test of Edge TTS in Dart.",
+    voice: "en-US-AriaNeural",
     rate: "+0%",
     volume: "+0%",
     pitch: "+0Hz",
   );
 
-  final file = File("output.mp3");
-  final sink = file.openWrite();
+  final sink = File("output.mp3").openWrite();
 
   try {
-    // Stream the data
     await for (final chunk in communicate.stream()) {
       if (chunk.type == "audio") {
-        // Write binary audio data
         sink.add(chunk.audioData!);
       } else if (chunk.type == "WordBoundary") {
-        // Handle metadata for highlighting
-        print("Word: ${chunk.metadata!.text} at ${chunk.metadata!.offset}ms");
+        print("Word: ${chunk.metadata!.text} at ${chunk.metadata!.offset}");
       }
     }
   } finally {
@@ -89,6 +102,83 @@ void main() async {
   }
 }
 ```
+
+### Save to File (Quick Method)
+
+```dart
+import 'package:edge_tts_dart/edge_tts_dart.dart';
+
+void main() async {
+  final communicate = Communicate(
+    text: "Hello, this is a quick save example.",
+    voice: "en-US-GuyNeural",
+  );
+
+  // Save audio and metadata in one call
+  await communicate.save("output.mp3", metadataPath: "output.json");
+}
+```
+
+### Generating Subtitles (SRT)
+
+```dart
+import 'dart:io';
+import 'package:edge_tts_dart/edge_tts_dart.dart';
+
+void main() async {
+  final communicate = Communicate(
+    text: "Hello, this is a subtitle test.",
+    voice: "en-US-AriaNeural",
+    boundary: "SentenceBoundary", // or "WordBoundary"
+  );
+
+  final subMaker = SubMaker();
+  final sink = File("output.mp3").openWrite();
+
+  await for (final chunk in communicate.stream()) {
+    if (chunk.type == "audio") {
+      sink.add(chunk.audioData!);
+    } else {
+      subMaker.feed(chunk);
+    }
+  }
+  await sink.close();
+
+  // Generate and save SRT subtitles
+  final srt = subMaker.getSrt();
+  await File("output.srt").writeAsString(srt);
+  print(srt);
+}
+```
+
+## API Reference
+
+### Communicate
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `text` | `String` | required | The text to synthesize |
+| `voice` | `String?` | `en-US-AriaNeural` | Voice short name |
+| `rate` | `String` | `+0%` | Speech rate adjustment |
+| `volume` | `String` | `+0%` | Volume adjustment |
+| `pitch` | `String` | `+0Hz` | Pitch adjustment |
+| `boundary` | `String` | `SentenceBoundary` | Metadata granularity (`WordBoundary` or `SentenceBoundary`) |
+| `connectTimeout` | `int` | `10` | WebSocket connection timeout in seconds |
+| `receiveTimeout` | `int` | `60` | Response receive timeout in seconds |
+
+### VoicesManager
+
+| Method | Description |
+|---|---|
+| `VoicesManager.create()` | Fetch all voices and create a manager instance |
+| `find({gender, locale, language})` | Filter voices by attributes |
+
+### SubMaker
+
+| Method | Description |
+|---|---|
+| `feed(TTSChunk chunk)` | Feed a boundary event from `stream()` |
+| `getSrt()` | Generate SRT formatted subtitle string |
 
 ## Architecture
 

@@ -2,49 +2,65 @@ import 'constants.dart';
 
 class TTSConfig {
   String voice;
-  String rate;
-  String volume;
-  String pitch;
-  String boundary; // "WordBoundary" or "SentenceBoundary"
+  final String rate;
+  final String volume;
+  final String pitch;
+  final String boundary;
+
+  // Compile-once regex patterns for validation
+  static final _ratePattern = RegExp(r'^[+-]\d+%$');
+  static final _volumePattern = RegExp(r'^[+-]\d+%$');
+  static final _pitchPattern = RegExp(r'^[+-]\d+Hz$');
+  static final _voiceShortPattern =
+      RegExp(r'^([a-z]{2,})-([A-Z]{2,})-(.+Neural)$');
+  static final _voiceLongPattern =
+      RegExp(r'^Microsoft Server Speech Text to Speech Voice \(.+,.+\)$');
 
   TTSConfig({
     String? voice,
-    this.rate = "+0%",
-    this.volume = "+0%",
-    this.pitch = "+0Hz",
-    this.boundary = "SentenceBoundary",
+    this.rate = '+0%',
+    this.volume = '+0%',
+    this.pitch = '+0Hz',
+    this.boundary = 'SentenceBoundary',
   }) : voice = voice ?? Constants.defaultVoice {
     _validate();
   }
 
   void _validate() {
-    // Basic validation logic
-    if (!RegExp(r"^[+-]\d+%$").hasMatch(rate)) {
+    if (!_ratePattern.hasMatch(rate)) {
       throw ArgumentError("Invalid rate '$rate'.");
     }
-    if (!RegExp(r"^[+-]\d+%$").hasMatch(volume)) {
+    if (!_volumePattern.hasMatch(volume)) {
       throw ArgumentError("Invalid volume '$volume'.");
     }
-    if (!RegExp(r"^[+-]\d+Hz$").hasMatch(pitch)) {
+    if (!_pitchPattern.hasMatch(pitch)) {
       throw ArgumentError("Invalid pitch '$pitch'.");
     }
+    if (boundary != 'WordBoundary' && boundary != 'SentenceBoundary') {
+      throw ArgumentError(
+          "Invalid boundary '$boundary'. Must be 'WordBoundary' or 'SentenceBoundary'.");
+    }
 
-    // Handle the voice name parsing logic akin to Python if necessary
-    // match = re.match(r"^([a-z]{2,})-([A-Z]{2,})-(.+Neural)$", self.voice)
-    final match =
-        RegExp(r"^([a-z]{2,})-([A-Z]{2,})-(.+Neural)$").firstMatch(voice);
+    // Convert short voice name to full Microsoft format
+    // e.g. "en-US-AriaNeural" -> "Microsoft Server Speech Text to Speech Voice (en-US, AriaNeural)"
+    final match = _voiceShortPattern.firstMatch(voice);
     if (match != null) {
-      final lang = match.group(1);
+      final lang = match.group(1)!;
       var region = match.group(2)!;
       var name = match.group(3)!;
 
-      if (name.contains("-")) {
-        region = "$region-${name.substring(0, name.indexOf('-'))}";
+      if (name.contains('-')) {
+        region = '$region-${name.substring(0, name.indexOf('-'))}';
         name = name.substring(name.indexOf('-') + 1);
       }
 
       voice =
-          "Microsoft Server Speech Text to Speech Voice ($lang-$region, $name)";
+          'Microsoft Server Speech Text to Speech Voice ($lang-$region, $name)';
+    }
+
+    // Validate the final voice format
+    if (!_voiceLongPattern.hasMatch(voice)) {
+      throw ArgumentError("Invalid voice '$voice'.");
     }
   }
 }
@@ -71,26 +87,30 @@ class Voice {
   });
 
   factory Voice.fromJson(Map<String, dynamic> json) {
+    final rawTag = json['VoiceTag'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final tag = Map<String, dynamic>.from(rawTag);
+    tag.putIfAbsent('ContentCategories', () => <dynamic>[]);
+    tag.putIfAbsent('VoicePersonalities', () => <dynamic>[]);
+
     return Voice(
-      name: json['Name'],
-      shortName: json['ShortName'],
-      gender: json['Gender'],
-      locale: json['Locale'],
-      suggestedCodec: json['SuggestedCodec'],
-      friendlyName: json['FriendlyName'],
-      status: json['Status'],
-      voiceTag: json['VoiceTag'] ?? {},
+      name: json['Name'] ?? '',
+      shortName: json['ShortName'] ?? '',
+      gender: json['Gender'] ?? '',
+      locale: json['Locale'] ?? '',
+      suggestedCodec: json['SuggestedCodec'] ?? '',
+      friendlyName: json['FriendlyName'] ?? '',
+      status: json['Status'] ?? '',
+      voiceTag: tag,
     );
   }
 }
 
 class TTSChunk {
   final String type; // "audio", "WordBoundary", "SentenceBoundary"
-  // Or better typed:
   final List<int>? audioData;
   final Metadata? metadata;
 
-  TTSChunk({required this.type, this.audioData, this.metadata});
+  const TTSChunk({required this.type, this.audioData, this.metadata});
 }
 
 class Metadata {
@@ -99,29 +119,17 @@ class Metadata {
   final double duration;
   final String text;
 
-  Metadata(
-      {required this.type,
-      required this.offset,
-      required this.duration,
-      required this.text});
+  const Metadata({
+    required this.type,
+    required this.offset,
+    required this.duration,
+    required this.text,
+  });
 
-  factory Metadata.fromJson(Map<String, dynamic> json) {
-    // Logic from communicate.py __parse_metadata
-    // It receives the inner data object usually?
-    // Wait, python yield parsed_metadata which is a dict.
-    /*
-                return {
-                    "type": meta_type,
-                    "offset": current_offset,
-                    "duration": current_duration,
-                    "text": unescape(meta_obj["Data"]["text"]["Text"]),
-                }
-      */
-    return Metadata(
-      type: json['type'],
-      offset: json['offset'],
-      duration: json['duration'],
-      text: json['text'],
-    );
-  }
+  Map<String, dynamic> toJson() => {
+        'type': type,
+        'offset': offset,
+        'duration': duration,
+        'text': text,
+      };
 }

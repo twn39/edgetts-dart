@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:edge_tts_dart/edge_tts_dart.dart';
 
 void main() async {
+  // List available voices
   print("Listing voices...");
   try {
     final voices = await listVoices();
@@ -9,14 +10,24 @@ void main() async {
     if (voices.isNotEmpty) {
       print("First voice: ${voices.first.shortName} (${voices.first.locale})");
     }
+
+    // Use VoicesManager to filter voices
+    final manager = await VoicesManager.create(customVoices: voices);
+    final enFemale = manager.find(gender: 'Female', locale: 'en-US');
+    print("Found ${enFemale.length} en-US female voices.");
   } catch (e) {
     print("Error listing voices: $e");
   }
 
+  // Generate audio with SubMaker for SRT subtitles
   print("\nGenerating audio...");
   final text = "Hello, this is a test from Dart implementation of Edge TTS.";
-  final communicate = Communicate(text: text);
+  final communicate = Communicate(
+    text: text,
+    boundary: "SentenceBoundary",
+  );
 
+  final subMaker = SubMaker();
   final file = File("test_audio.mp3");
   final sink = file.openWrite();
 
@@ -24,12 +35,20 @@ void main() async {
     await for (final chunk in communicate.stream()) {
       if (chunk.type == "audio" && chunk.audioData != null) {
         sink.add(chunk.audioData!);
-      } else if (chunk.type == "WordBoundary") {
+      } else if (chunk.type == "WordBoundary" ||
+          chunk.type == "SentenceBoundary") {
+        subMaker.feed(chunk);
         print(
-            "Word boundary: ${chunk.metadata?.text} at ${chunk.metadata?.offset}ms");
+            "${chunk.type}: ${chunk.metadata?.text} at ${chunk.metadata?.offset}");
       }
     }
     print("Audio saved to test_audio.mp3");
+
+    // Save SRT subtitles
+    final srt = subMaker.getSrt();
+    await File("test_audio.srt").writeAsString(srt);
+    print("SRT saved to test_audio.srt");
+    print("\n$srt");
   } catch (e) {
     print("Error generating audio: $e");
   } finally {
