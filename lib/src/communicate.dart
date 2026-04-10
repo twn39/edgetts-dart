@@ -16,6 +16,8 @@ class _CommunicateState {
   double offsetCompensation = 0.0;
   double lastDurationOffset = 0.0;
   bool streamWasCalled = false;
+  int chunkAudioBytes = 0;
+  int cumulativeAudioBytes = 0;
 }
 
 class Communicate {
@@ -76,6 +78,7 @@ class Communicate {
 
       bool retried = false;
       while (true) {
+        _state.chunkAudioBytes = 0;
         try {
           await for (final message in _stream()) {
             yield message;
@@ -109,6 +112,16 @@ class Communicate {
     } finally {
       client.close();
     }
+  }
+
+  void _compensateOffset() {
+    _state.cumulativeAudioBytes += _state.chunkAudioBytes;
+    _state.offsetCompensation = (_state.cumulativeAudioBytes *
+            8 *
+            Constants.ticksPerSecond ~/
+            Constants.mp3BitrateBps)
+        .toDouble();
+    _state.chunkAudioBytes = 0;
   }
 
   Stream<TTSChunk> _stream() async* {
@@ -206,9 +219,7 @@ class Communicate {
           yield TTSChunk(type: metadata.type, metadata: metadata);
           _state.lastDurationOffset = metadata.offset + metadata.duration;
         } else if (path == 'turn.end') {
-          _state.offsetCompensation = _state.lastDurationOffset;
-          // Average padding typically added by the service
-          _state.offsetCompensation += 8750000;
+          _compensateOffset();
           break;
         } else if (path != 'response' && path != 'turn.start') {
           throw UnknownResponse('Unknown path received: $path');
@@ -248,6 +259,7 @@ class Communicate {
         }
 
         audioWasReceived = true;
+        _state.chunkAudioBytes += dataBytes.length;
         yield TTSChunk(type: 'audio', audioData: dataBytes);
       }
     }

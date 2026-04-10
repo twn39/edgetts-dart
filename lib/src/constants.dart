@@ -10,6 +10,9 @@ class Constants {
 
   static const String defaultVoice = "en-US-EmmaMultilingualNeural";
 
+  static const int ticksPerSecond = 10000000;
+  static const int mp3BitrateBps = 48000;
+
   static const String chromiumFullVersion = "143.0.3650.75";
   static String get chromiumMajorVersion => chromiumFullVersion.split(".")[0];
   static String get secMsGecVersion => "1-$chromiumFullVersion";

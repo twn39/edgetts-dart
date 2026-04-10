@@ -103,7 +103,7 @@ class EdgeTTSUtil {
 
       splitAt = _adjustSplitPointForXmlEntity(bytes, splitAt);
 
-      if (splitAt <= 0) {
+      if (splitAt < 0) {
         throw ArgumentError(
             'Maximum byte length is too small or invalid text structure.');
       }
@@ -111,7 +111,7 @@ class EdgeTTSUtil {
       final chunk = utf8.decode(bytes.sublist(0, splitAt)).trim();
       if (chunk.isNotEmpty) yield chunk;
 
-      bytes = bytes.sublist(splitAt);
+      bytes = bytes.sublist(splitAt > 0 ? splitAt : 1);
     }
 
     final remaining = utf8.decode(bytes).trim();
@@ -130,12 +130,8 @@ class EdgeTTSUtil {
   }
 
   static int _findSafeUtf8SplitPoint(List<int> bytes, int limit) {
-    // Back off from limit to find a valid UTF-8 boundary.
-    // UTF-8 multi-byte chars are at most 4 bytes, so we only need
-    // to check at most 3 bytes back from limit.
     var splitAt = limit.clamp(0, bytes.length);
-    final minCheck = (splitAt - 4).clamp(0, splitAt);
-    while (splitAt > minCheck) {
+    while (splitAt > 0) {
       try {
         utf8.decode(bytes.sublist(0, splitAt));
         return splitAt;
