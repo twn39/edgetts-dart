@@ -1,3 +1,4 @@
+@Tags(['network'])
 import 'dart:io';
 import 'package:test/test.dart';
 import 'package:edge_tts_dart/edge_tts_dart.dart';

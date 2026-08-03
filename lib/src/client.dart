@@ -22,25 +22,31 @@ class EdgeHttpClient {
     http.Client client,
     String url, {
     Map<String, String>? baseHeaders,
+    Duration? timeout,
   }) async {
     final headers = DRM.headersWithMuid(baseHeaders ?? Constants.voiceHeaders);
     final uri = Uri.parse(url);
 
+    Future<http.Response> doGet(Map<String, String> reqHeaders) {
+      final req = client.get(uri, headers: reqHeaders);
+      return timeout != null ? req.timeout(timeout) : req;
+    }
+
     try {
-      final response = await client.get(uri, headers: headers);
+      final response = await doGet(headers);
       if (response.statusCode == 403) {
-        await syncClock(client, headers: headers);
+        await syncClock(client, headers: headers, timeout: timeout);
         final retriedHeaders =
             DRM.headersWithMuid(baseHeaders ?? Constants.voiceHeaders);
-        return await client.get(uri, headers: retriedHeaders);
+        return await doGet(retriedHeaders);
       }
       return response;
     } on http.ClientException catch (e) {
       if (!e.message.contains('403')) rethrow;
-      await syncClock(client, headers: headers);
+      await syncClock(client, headers: headers, timeout: timeout);
       final retriedHeaders =
           DRM.headersWithMuid(baseHeaders ?? Constants.voiceHeaders);
-      return await client.get(uri, headers: retriedHeaders);
+      return await doGet(retriedHeaders);
     }
   }
 
@@ -48,13 +54,15 @@ class EdgeHttpClient {
   static Future<void> syncClock(
     http.Client client, {
     Map<String, String>? headers,
+    Duration? timeout,
   }) async {
     try {
       final reqHeaders = headers ?? DRM.headersWithMuid(Constants.wssHeaders);
-      final syncResponse = await client.get(
+      final req = client.get(
         Uri.parse(Constants.voiceList),
         headers: reqHeaders,
       );
+      final syncResponse = await (timeout != null ? req.timeout(timeout) : req);
       DRM.handleClientResponseError(
         syncResponse.statusCode,
         syncResponse.headers,

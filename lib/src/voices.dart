@@ -5,11 +5,12 @@ import 'constants.dart';
 import 'data_classes.dart';
 
 Future<List<Voice>> _listVoicesRequest(
-    http.Client httpClient, String? proxy) async {
+    http.Client httpClient, String? proxy, Duration? timeout) async {
   final response = await EdgeHttpClient.getWithRetry(
     httpClient,
     Constants.voiceList,
     baseHeaders: Constants.voiceHeaders,
+    timeout: timeout,
   );
 
   if (response.statusCode != 200) {
@@ -32,11 +33,15 @@ Future<List<Voice>> _listVoicesRequest(
 }
 
 /// List all available voices and their attributes.
-Future<List<Voice>> listVoices({http.Client? client, String? proxy}) async {
+Future<List<Voice>> listVoices({
+  http.Client? client,
+  String? proxy,
+  Duration? timeout,
+}) async {
   final httpClient = client ?? EdgeHttpClient.createClient(proxy: proxy);
 
   try {
-    return await _listVoicesRequest(httpClient, proxy);
+    return await _listVoicesRequest(httpClient, proxy, timeout);
   } finally {
     if (client == null) {
       httpClient.close();
@@ -59,10 +64,14 @@ class VoicesManager {
   VoicesManager.uninitialized();
 
   /// Creates a VoicesManager and populates it with all available voices.
-  static Future<VoicesManager> create(
-      {List<Voice>? customVoices, String? proxy}) async {
+  static Future<VoicesManager> create({
+    List<Voice>? customVoices,
+    String? proxy,
+    Duration? timeout,
+  }) async {
     final manager = VoicesManager._();
-    final voiceList = customVoices ?? await listVoices(proxy: proxy);
+    final voiceList =
+        customVoices ?? await listVoices(proxy: proxy, timeout: timeout);
 
     manager.voices = voiceList.map((voice) {
       return VoicesManagerVoice.fromVoice(voice);

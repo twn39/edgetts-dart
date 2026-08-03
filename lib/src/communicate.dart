@@ -34,6 +34,8 @@ class Communicate {
   final int receiveTimeout;
   final TTSConfig ttsConfig;
   final _CommunicateState _state = _CommunicateState();
+  bool _isClosed = false;
+  IOWebSocketChannel? _activeChannel;
 
   Communicate({
     required this.text,
@@ -58,6 +60,23 @@ class Communicate {
           boundary: boundary,
         );
 
+  /// Whether this [Communicate] session has been closed or cancelled.
+  bool get isClosed => _isClosed;
+
+  /// Programmatically close and abort any active network streaming operations.
+  Future<void> close() async {
+    if (_isClosed) return;
+    _isClosed = true;
+    final channel = _activeChannel;
+    _activeChannel = null;
+    if (channel != null) {
+      await channel.sink.close();
+    }
+  }
+
+  /// Alias for [close].
+  Future<void> cancel() => close();
+
   /// Stream audio chunks and metadata from the TTS service.
   ///
   /// Can only be called once per [Communicate] instance.
@@ -76,17 +95,20 @@ class Communicate {
     final texts = EdgeTTSUtil.splitTextByByteLength(escapedText, 4096);
 
     for (final partialText in texts) {
+      if (_isClosed) break;
       _state.partialText = partialText;
 
       bool retried = false;
-      while (true) {
+      while (!_isClosed) {
         _state.chunkAudioBytes = 0;
         try {
           await for (final message in _stream()) {
+            if (_isClosed) break;
             yield message;
           }
           break;
         } catch (e) {
+          if (_isClosed) break;
           if (retried) rethrow;
 
           if (e.toString().contains('403')) {
@@ -124,6 +146,8 @@ class Communicate {
   }
 
   Stream<TTSChunk> _stream() async* {
+    if (_isClosed) return;
+
     final connId = EdgeTTSUtil.connectId();
     final secMsGec = DRM.generateSecMsGec();
 
@@ -174,48 +198,63 @@ class Communicate {
 
       final detachedSocket = await response.detachSocket();
       socket = WebSocket.fromUpgradedSocket(detachedSocket, serverSide: false);
-    } catch (e) {
+    } finally {
       client.close();
-      rethrow;
     }
 
     final channel = IOWebSocketChannel(socket);
+    _activeChannel = channel;
 
     bool audioWasReceived = false;
 
-    // Send Command Request using SSMLComposer
-    channel.sink.add(SSMLComposer.buildCommandConfig(ttsConfig));
+    try {
+      // Send Command Request using SSMLComposer
+      channel.sink.add(SSMLComposer.buildCommandConfig(ttsConfig));
 
-    // Send SSML Request using SSMLComposer
-    channel.sink.add(
-        SSMLComposer.buildSsmlRequest(connId, ttsConfig, _state.partialText));
+      // Send SSML Request using SSMLComposer
+      channel.sink.add(
+          SSMLComposer.buildSsmlRequest(connId, ttsConfig, _state.partialText));
 
-    // Listen for responses
-    await for (final message in channel.stream) {
-      if (message is String) {
-        final result =
-            MessageParser.parseTextMessage(message, _state.offsetCompensation);
-        if (result.chunk != null) {
-          yield result.chunk!;
-          _state.lastDurationOffset =
-              result.chunk!.metadata!.offset + result.chunk!.metadata!.duration;
-        } else if (result.isTurnEnd) {
-          _compensateOffset();
-          break;
-        }
-      } else if (message is List<int>) {
-        final audioData = MessageParser.parseBinaryMessage(message);
-        if (audioData != null) {
-          audioWasReceived = true;
-          _state.chunkAudioBytes += audioData.length;
-          yield TTSChunk(type: 'audio', audioData: audioData);
+      // Listen for responses with optional receiveTimeout enforcement
+      final messageStream = receiveTimeout > 0
+          ? channel.stream.timeout(
+              Duration(seconds: receiveTimeout),
+              onTimeout: (sink) {
+                sink.addError(TimeoutException(
+                    'Receive timeout after $receiveTimeout seconds waiting for TTS data'));
+                sink.close();
+              },
+            )
+          : channel.stream;
+
+      await for (final message in messageStream) {
+        if (_isClosed) break;
+        if (message is String) {
+          final result = MessageParser.parseTextMessage(
+              message, _state.offsetCompensation);
+          if (result.chunk != null) {
+            yield result.chunk!;
+            _state.lastDurationOffset = result.chunk!.metadata!.offset +
+                result.chunk!.metadata!.duration;
+          } else if (result.isTurnEnd) {
+            _compensateOffset();
+            break;
+          }
+        } else if (message is List<int>) {
+          final audioData = MessageParser.parseBinaryMessage(message);
+          if (audioData != null) {
+            audioWasReceived = true;
+            _state.chunkAudioBytes += audioData.length;
+            yield TTSChunk(type: 'audio', audioData: audioData);
+          }
         }
       }
+    } finally {
+      _activeChannel = null;
+      await channel.sink.close();
     }
 
-    channel.sink.close();
-
-    if (!audioWasReceived) {
+    if (!audioWasReceived && !_isClosed) {
       throw NoAudioReceived('No audio received');
     }
   }

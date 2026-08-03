@@ -1,3 +1,4 @@
+@Tags(['network'])
 import 'package:test/test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -7,7 +8,7 @@ void main() {
   group('Real API Voice List', () {
     test('listVoices retrieves real voice data', () async {
       print("Fetching voices from API...");
-      final voices = await listVoices();
+      final voices = await listVoices(timeout: const Duration(seconds: 30));
 
       print("Fetched ${voices.length} voices.");
       expect(voices, isNotEmpty, reason: "Voice list should not be empty");
