@@ -17,8 +17,8 @@ platforms:
   ios:
   linux:
   macos:
-  web:
   windows:
+
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

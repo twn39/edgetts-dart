@@ -56,5 +56,15 @@ void main() {
       }
       expect(chunks.join(''), equals(text));
     });
+    test('splitTextByByteLength throws for non-positive byteLength', () {
+      expect(
+        () => EdgeTTSUtil.splitTextByByteLength('test', 0).toList(),
+        throwsArgumentError,
+      );
+      expect(
+        () => EdgeTTSUtil.splitTextByByteLength('test', -5).toList(),
+        throwsArgumentError,
+      );
+    });
   });
 }

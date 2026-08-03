@@ -1,4 +1,6 @@
 import 'package:test/test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:edge_tts_dart/edge_tts_dart.dart';
 
 void main() {
@@ -50,6 +52,47 @@ void main() {
       expect(v.locale, equals("en-US"));
       expect(v.gender, equals("Female"));
       expect(v.status, equals("GA")); // Assuming it's GA
+    });
+  });
+
+  group('Mock Client Voice List Errors', () {
+    test('throws ClientException on HTTP non-200 status code', () async {
+      final client = MockClient((request) async {
+        return http.Response('Server Error', 500);
+      });
+
+      expect(
+        () => listVoices(client: client),
+        throwsA(isA<http.ClientException>()),
+      );
+    });
+
+    test('handles HTTP 403 retry with date header clock skew', () async {
+      int requestCount = 0;
+      final client = MockClient((request) async {
+        requestCount++;
+        if (requestCount == 1) {
+          return http.Response(
+            'Forbidden',
+            403,
+            headers: {'date': 'Wed, 21 Oct 2026 07:28:00 GMT'},
+          );
+        } else if (requestCount == 2) {
+          // Sync clock request
+          return http.Response('OK', 200,
+              headers: {'date': 'Wed, 21 Oct 2026 07:28:00 GMT'});
+        } else {
+          // Retry request after sync
+          return http.Response(
+            '[{"Name": "TestVoice", "ShortName": "test-voice", "Gender": "Female", "Locale": "en-US", "SuggestedCodec": "mp3", "FriendlyName": "Test", "Status": "GA"}]',
+            200,
+          );
+        }
+      });
+
+      final voices = await listVoices(client: client);
+      expect(voices, hasLength(1));
+      expect(voices.first.shortName, equals('test-voice'));
     });
   });
 }

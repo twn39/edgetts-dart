@@ -1,0 +1,8 @@
+{
+  "include": [
+    "lib",
+    "test"
+  ],
+  "output": ".codegraph",
+  "cache": true
+}

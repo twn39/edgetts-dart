@@ -52,12 +52,13 @@ void main() {
       expect(config.voice, contains('zh-CN'));
     });
 
-    test('voice with dash in name is handled', () {
-      // Some voices have names like "en-IE-ConnorNeural" which is fine,
-      // but edge cases like sub-regions: "zh-CN-liaoning-XiaobeiNeural"
-      final config = TTSConfig(voice: 'zh-CN-XiaobeiNeural');
-      expect(config.voice,
-          startsWith('Microsoft Server Speech Text to Speech Voice'));
+    test('voice with dash in name is handled and modifies region', () {
+      // e.g. "en-US-SubRegion-AriaNeural" where name group initially matches "SubRegion-AriaNeural"
+      final config = TTSConfig(voice: 'en-US-SubRegion-AriaNeural');
+      expect(
+          config.voice,
+          equals(
+              'Microsoft Server Speech Text to Speech Voice (en-US-SubRegion, AriaNeural)'));
     });
   });
 

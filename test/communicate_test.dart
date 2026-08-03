@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:test/test.dart';
+import 'package:edge_tts_dart/src/communicate.dart';
 import 'package:edge_tts_dart/src/util.dart';
 import 'package:edge_tts_dart/src/data_classes.dart';
 
@@ -70,6 +71,16 @@ void main() {
           EdgeTTSUtil.splitTextByByteLength(text, bytes.length).toList();
       expect(chunks.length, equals(1));
       expect(chunks[0], equals(text));
+    });
+  });
+
+  group('Communicate stream state', () {
+    test('calling stream twice throws StateError when listened to', () async {
+      final communicate = Communicate(text: 'Hello');
+      final s1 = communicate.stream();
+      s1.listen((_) {}, onError: (_) {});
+      final s2 = communicate.stream();
+      expect(s2.drain(), throwsStateError);
     });
   });
 }

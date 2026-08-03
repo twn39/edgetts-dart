@@ -23,6 +23,22 @@ String xmlUnescape(String text) {
 }
 
 class EdgeTTSUtil {
+  /// Format proxy input string into PAC format for HttpClient.findProxy.
+  static String formatProxy(String proxy) {
+    var cleaned = proxy.trim();
+    if (cleaned.startsWith('http://')) {
+      cleaned = cleaned.substring(7);
+    } else if (cleaned.startsWith('https://')) {
+      cleaned = cleaned.substring(8);
+    }
+    if (cleaned.startsWith('PROXY ') ||
+        cleaned.startsWith('SOCKS') ||
+        cleaned.startsWith('DIRECT')) {
+      return cleaned;
+    }
+    return 'PROXY $cleaned';
+  }
+
   static String connectId() {
     return const Uuid().v4().replaceAll('-', '');
   }

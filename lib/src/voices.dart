@@ -1,19 +1,20 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'client.dart';
 import 'constants.dart';
-import 'drm.dart';
 import 'data_classes.dart';
 
 Future<List<Voice>> _listVoicesRequest(
-    http.Client httpClient, Map<String, String> headers, String? proxy) async {
-  final secMsGec = DRM.generateSecMsGec();
-  final url =
-      "${Constants.voiceList}&Sec-MS-GEC=$secMsGec&Sec-MS-GEC-Version=${Constants.secMsGecVersion}";
-  final response = await httpClient.get(Uri.parse(url), headers: headers);
+    http.Client httpClient, String? proxy) async {
+  final response = await EdgeHttpClient.getWithRetry(
+    httpClient,
+    Constants.voiceList,
+    baseHeaders: Constants.voiceHeaders,
+  );
 
   if (response.statusCode != 200) {
-    throw http.ClientException(
-        "Failed to list voices: ${response.statusCode}", Uri.parse(url));
+    throw http.ClientException("Failed to list voices: ${response.statusCode}",
+        Uri.parse(Constants.voiceList));
   }
 
   final List<dynamic> data = jsonDecode(response.body);
@@ -32,32 +33,10 @@ Future<List<Voice>> _listVoicesRequest(
 
 /// List all available voices and their attributes.
 Future<List<Voice>> listVoices({http.Client? client, String? proxy}) async {
-  final httpClient = client ?? http.Client();
+  final httpClient = client ?? EdgeHttpClient.createClient(proxy: proxy);
 
   try {
-    final headers = DRM.headersWithMuid(Constants.voiceHeaders);
-
-    try {
-      return await _listVoicesRequest(httpClient, headers, proxy);
-    } on http.ClientException catch (e) {
-      if (!e.message.contains("403")) rethrow;
-
-      DRM.handleClientResponseError(403, {});
-
-      // Try to get date header via a direct request for clock skew
-      try {
-        final syncResponse = await httpClient.get(
-          Uri.parse(Constants.voiceList),
-          headers: headers,
-        );
-        DRM.handleClientResponseError(
-            syncResponse.statusCode, syncResponse.headers);
-      } catch (_) {
-        // Ignore sync errors
-      }
-
-      return await _listVoicesRequest(httpClient, headers, proxy);
-    }
+    return await _listVoicesRequest(httpClient, proxy);
   } finally {
     if (client == null) {
       httpClient.close();
@@ -77,11 +56,13 @@ class VoicesManager {
   bool _calledCreate = false;
 
   VoicesManager._();
+  VoicesManager.uninitialized();
 
   /// Creates a VoicesManager and populates it with all available voices.
-  static Future<VoicesManager> create({List<Voice>? customVoices}) async {
+  static Future<VoicesManager> create(
+      {List<Voice>? customVoices, String? proxy}) async {
     final manager = VoicesManager._();
-    final voiceList = customVoices ?? await listVoices();
+    final voiceList = customVoices ?? await listVoices(proxy: proxy);
 
     manager.voices = voiceList.map((voice) {
       return VoicesManagerVoice.fromVoice(voice);

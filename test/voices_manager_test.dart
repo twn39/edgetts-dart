@@ -92,5 +92,10 @@ void main() {
       final voice = manager.voices.first;
       expect(voice.language, equals('en'));
     });
+
+    test('find throws StateError if create was not called', () {
+      final uninitialized = VoicesManager.uninitialized();
+      expect(() => uninitialized.find(), throwsStateError);
+    });
   });
 }

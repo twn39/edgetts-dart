@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:test/test.dart';
 import 'package:edge_tts_dart/edge_tts_dart.dart';
 
@@ -47,16 +48,37 @@ void main() {
               reason: "Duration should be non-negative");
 
           expect(meta.text, isA<String>(), reason: "Text should be String");
-          // For "Hello, world", text might be "Hello" or "," or "world"
-
           metadataReceived = true;
         }
       }
 
       expect(audioReceived, isTrue);
-      // Metadata might not always be received for short text or depending on service,
-      // but usually yes for "Hello, world".
       expect(metadataReceived, isTrue);
+    });
+
+    test('Communicate save writes audio and metadata to files', () async {
+      final tempDir = await Directory.systemTemp.createTemp('edge_tts_test_');
+      final audioPath = '${tempDir.path}/test.mp3';
+      final metadataPath = '${tempDir.path}/test.jsonl';
+
+      final communicate = Communicate(
+        text: 'Hello world',
+        voice: 'en-US-AriaNeural',
+        boundary: 'WordBoundary',
+      );
+
+      await communicate.save(audioPath, metadataPath: metadataPath);
+
+      final audioFile = File(audioPath);
+      final metadataFile = File(metadataPath);
+
+      expect(await audioFile.exists(), isTrue);
+      expect(await audioFile.length(), greaterThan(0));
+
+      expect(await metadataFile.exists(), isTrue);
+      expect(await metadataFile.length(), greaterThan(0));
+
+      await tempDir.delete(recursive: true);
     });
   });
 }

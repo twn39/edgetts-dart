@@ -146,6 +146,7 @@ void main() {
 
       expect(sub1, equals(sub2));
       expect(sub1, isNot(equals(sub3)));
+      expect(sub1 == 'not a Subtitle', isFalse);
     });
 
     test('Subtitle.toSrt with custom eol', () {
